@@ -152,6 +152,22 @@ header.nav.scrolled{background:rgba(246,244,238,.93);backdrop-filter:blur(12px);
 .hero-sub{margin-top:clamp(12px,2.2vh,24px);font-family:var(--mincho);font-weight:500;
   font-size:clamp(12px,1.3vw,15px);color:var(--ink-dim);letter-spacing:.34em;padding-left:.34em}
 
+/* 能登半島の地図線画（左・座標付き＝土地への意匠） */
+.hero-map{position:absolute;z-index:4;left:clamp(20px,4.5vw,56px);top:clamp(180px,26vh,280px);
+  width:clamp(96px,11vw,150px);opacity:0;animation:chromeIn 1.2s ease-out 2.6s forwards}
+.hero-map svg{width:100%;height:auto;display:block;overflow:visible}
+.hero-map .coast{stroke:var(--ink);stroke-width:1.4;stroke-linecap:round;fill:none;opacity:.55;
+  stroke-dasharray:620;stroke-dashoffset:620;animation:coastDraw 2.6s ease-out 2.8s forwards}
+@keyframes coastDraw{to{stroke-dashoffset:0}}
+.hero-map .pt{fill:var(--em)}
+.hero-map .ring{stroke:var(--em);stroke-width:1;fill:none;opacity:.6;
+  transform-origin:116px 78px;animation:ringPulse 2.6s ease-out infinite}
+@keyframes ringPulse{0%{transform:scale(.4);opacity:.7}70%{transform:scale(1.5);opacity:0}100%{opacity:0}}
+.hero-map .ld{stroke:var(--em);stroke-width:1;opacity:.5}
+.hero-map .hm-label{margin-top:9px;font-family:var(--grot);font-size:9.5px;font-weight:500;
+  letter-spacing:.22em;text-transform:uppercase;color:var(--ink-dim);line-height:1.9}
+.hero-map .hm-label span{display:block;color:var(--ink-faint);font-size:8.5px;letter-spacing:.16em}
+
 /* 落款（代表挨拶の署名用） */
 .stamp{display:inline-flex;align-items:center;justify-content:center;
   writing-mode:vertical-rl;background:var(--em);color:#fff;
@@ -223,7 +239,9 @@ header.nav.scrolled{background:rgba(246,244,238,.93);backdrop-filter:blur(12px);
 @keyframes beamIn{0%{opacity:0}100%{opacity:1}}
 @media (prefers-reduced-motion:reduce){
   .slash,.flash{display:none}
-  .hero-meta,.hero-capline,.hero-sub,.hero-scroll,.beam-glow{animation:none;opacity:1}
+  .hero-meta,.hero-capline,.hero-sub,.hero-scroll,.beam-glow,.hero-map{animation:none;opacity:1}
+  .hero-map .coast{animation:none;stroke-dashoffset:0}
+  .hero-map .ring{animation:none;opacity:0}
   .beam{animation:none}.beam.b2{animation:none;opacity:.85}
   .hero-title .ltr{transform:none;opacity:1;transition:none}
 }
@@ -347,6 +365,7 @@ footer .copy{font-family:var(--grot);font-size:10px;color:var(--ink-faint);lette
   .biz-row p{grid-column:2}
   .support .grid{grid-template-columns:1fr}
   .hero-title{font-size:clamp(72px,15vw,200px)}
+  .hero-map{display:none}
   .shelf{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
   .shelf::-webkit-scrollbar{display:none}
   .shelf-track{justify-content:flex-start}
@@ -405,10 +424,20 @@ footer .copy{font-family:var(--grot);font-size:10px;color:var(--ink-faint);lette
   <div class="beam b2" aria-hidden="true"></div>
   <div class="beam-glow" aria-hidden="true"></div>
 
+  <div class="hero-map" aria-hidden="true">
+    <svg viewBox="0 0 200 260" fill="none">
+      <path class="coast" d="M60,250 C55,200 58,160 52,120 C48,90 60,60 85,42 C105,28 135,20 158,26 C170,30 172,42 162,50 C140,64 122,70 114,84 C106,98 110,112 98,124 C86,138 78,130 80,148 C82,170 94,180 98,210"/>
+      <circle class="ring" cx="116" cy="78" r="9"/>
+      <circle class="pt" cx="116" cy="78" r="3.2"/>
+      <line class="ld" x1="124" y1="78" x2="152" y2="78"/>
+    </svg>
+    <div class="hm-label">Ushitsu · Noto<span>37°18′N — 137°08′E</span></div>
+  </div>
+
   <div class="hero-center">
     <p class="hero-capline">Capital — For Noto</p>
     <h1 class="hero-title" id="heroTitle" aria-label="Susanoo">Susanoo</h1>
-    <p class="hero-sub" data-ja="荒ぶる力を、復興のエネルギーへ。" data-en="Turning the storm&apos;s fury into renewal.">荒ぶる力を、復興のエネルギーへ。</p>
+    <p class="hero-sub" data-ja="荒ぶる力を、復興のエネルギーへ。── 能登・宇出津から。" data-en="Turning the storm&apos;s fury into renewal — from Ushitsu, Noto.">荒ぶる力を、復興のエネルギーへ。── 能登・宇出津から。</p>
   </div>
 
   <!-- 7事業のカード：1枚ずつ固有の写真（複製なし・写真クレジットは assets/biz/CREDITS.txt） -->
