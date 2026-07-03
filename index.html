@@ -128,16 +128,19 @@ header.nav.scrolled{background:rgba(246,244,238,.93);backdrop-filter:blur(12px);
     rgba(255,255,255,.65) 180deg,
     rgba(212,186,120,.2) 181deg,
     transparent 184deg 360deg)}
-@keyframes beamSway{0%{transform:translateX(-50%) rotate(-1.4deg)}100%{transform:translateX(-50%) rotate(1.4deg)}}
+/* --br/--bx はマウス追従（JSが更新） */
+@keyframes beamSway{0%{transform:translateX(calc(-50% + var(--bx,0px))) rotate(calc(-1.4deg + var(--br,0deg)))}100%{transform:translateX(calc(-50% + var(--bx,0px))) rotate(calc(1.4deg + var(--br,0deg)))}}
 /* 光だまり（社名の背後） */
-.beam-glow{position:absolute;z-index:1;left:50%;top:44%;transform:translate(-50%,-50%);
+.beam-glow{position:absolute;z-index:1;left:50%;top:44%;
+  transform:translate(calc(-50% + var(--bx,0px)*1.6),-50%);
   width:min(72vw,940px);height:40vh;pointer-events:none;
   background:radial-gradient(50% 50% at 50% 50%,rgba(255,255,255,.85),rgba(255,251,240,.4) 42%,transparent 72%);
-  filter:blur(24px)}
+  filter:blur(24px);transition:transform .6s cubic-bezier(.2,.7,.2,1)}
 
 /* 中央：光に照らされるワードマーク（要素は最小限） */
-.hero-center{position:absolute;z-index:4;left:0;right:0;top:38svh;transform:translateY(-50%);
-  text-align:center;user-select:none}
+.hero-center{position:absolute;z-index:4;left:0;right:0;top:38svh;
+  transform:translateY(-50%) translate(var(--px,0px),var(--py,0px));
+  text-align:center;user-select:none;transition:transform .5s cubic-bezier(.2,.7,.2,1)}
 .hero-capline{font-family:var(--grot);font-size:clamp(10px,1.1vw,12px);font-weight:500;
   letter-spacing:.5em;text-transform:uppercase;color:var(--ink-dim);padding-left:.5em;
   margin-bottom:clamp(10px,2vh,22px)}
@@ -626,27 +629,62 @@ footer .copy{font-family:var(--grot);font-size:10px;color:var(--ink-faint);lette
   var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches;
   requestAnimationFrame(function(){ el.classList.add('in'); });
   if(reduced) return;
-  // ドロップイン完了後：スクロール量に応じて1文字ずつ順に落とす
+  // ドロップイン完了後：スクロール落下＋カーソル磁力（近づくと文字がふわっと浮く）を毎フレーム合成
   var done=false;
   setTimeout(function(){
     done=true;
     letters.forEach(function(s){ s.style.transition='none'; s.style.transitionDelay='0s'; });
   }, 2400);
-  var ticking=false;
-  function onScroll(){
-    if(!done||ticking) return; ticking=true;
-    requestAnimationFrame(function(){
-      var p=Math.min(1, window.scrollY/(window.innerHeight*0.9));
-      letters.forEach(function(s,i){
-        var lp=Math.max(0, p*1.6 - i*0.06);            // 文字ごとに遅れて落下開始
-        var y=lp*lp*window.innerHeight*0.45;
-        s.style.transform='translateY('+y.toFixed(1)+'px)';
-        s.style.opacity=Math.max(0,1-lp*1.2).toFixed(2);
-      });
-      ticking=false;
+  var mx=-1e4, my=-1e4;
+  window.addEventListener('pointermove',function(e){ mx=e.clientX; my=e.clientY; },{passive:true});
+  document.addEventListener('pointerleave',function(){ mx=-1e4; my=-1e4; });
+  var hero=document.querySelector('.hero');
+  var vis=true;
+  new IntersectionObserver(function(es){
+    es.forEach(function(e){ var was=vis; vis=e.isIntersecting; if(vis&&!was) loop(); });
+  },{threshold:0}).observe(hero);
+  function loop(){
+    if(!vis) return;
+    requestAnimationFrame(loop);
+    if(!done) return;
+    var p=Math.min(1, window.scrollY/(window.innerHeight*0.9));
+    letters.forEach(function(s,i){
+      var lp=Math.max(0, p*1.6 - i*0.06);            // 文字ごとに遅れて落下開始
+      var y=lp*lp*window.innerHeight*0.45;
+      var r=s.getBoundingClientRect();
+      var dx=mx-(r.left+r.width/2), dy=my-(r.top+r.height/2);
+      var m=Math.max(0, 1-Math.hypot(dx,dy)/240);    // 磁力（240px以内で反応）
+      y-=m*m*20;
+      s.style.transform='translateY('+y.toFixed(1)+'px) rotate('+(m*m*-dx*0.02).toFixed(2)+'deg)';
+      s.style.opacity=Math.max(0,1-lp*1.2).toFixed(2);
     });
+    // 陽光と社名ブロックがカーソルへゆっくり傾く
+    if(mx>-1e3){
+      var nx=mx/window.innerWidth-0.5, ny=my/window.innerHeight-0.5;
+      hero.style.setProperty('--br',(nx*3.2).toFixed(2)+'deg');
+      hero.style.setProperty('--bx',(nx*26).toFixed(1)+'px');
+      hero.style.setProperty('--px',(nx*-12).toFixed(1)+'px');
+      hero.style.setProperty('--py',(ny*-7).toFixed(1)+'px');
+    }
   }
-  window.addEventListener('scroll',onScroll,{passive:true});
+  loop();
+})();
+
+/* ===== カードの3Dチルト：マウスに吸い付く ===== */
+(function(){
+  if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches) return;
+  document.querySelectorAll('.cover').forEach(function(c){
+    c.addEventListener('pointermove',function(e){
+      if(e.pointerType==='touch') return;
+      var r=c.getBoundingClientRect();
+      var px=(e.clientX-r.left)/r.width-0.5, py=(e.clientY-r.top)/r.height-0.5;
+      c.style.transition='transform .12s ease-out';
+      c.style.transform='rotateY('+(-26+px*24).toFixed(1)+'deg) rotateX('+(-py*11).toFixed(1)+'deg) translateY(-10px) scale(1.05)';
+    });
+    c.addEventListener('pointerleave',function(){
+      c.style.transition=''; c.style.transform='';
+    });
+  });
 })();
 
 /* ===== 日英ワンタップ切替 ===== */
@@ -738,6 +776,12 @@ footer .copy{font-family:var(--grot);font-size:10px;color:var(--ink-faint);lette
   new IntersectionObserver(function(es){
     es.forEach(function(e){ var was=vis; vis=e.isIntersecting; if(vis&&!was){ last=performance.now(); loop(); } });
   },{threshold:0.01}).observe(hero);
+  var MX=-1e4, MY=-1e4;
+  hero.addEventListener('pointermove',function(e){
+    var r=hero.getBoundingClientRect();
+    MX=e.clientX-r.left; MY=e.clientY-r.top;
+  },{passive:true});
+  hero.addEventListener('pointerleave',function(){ MX=-1e4; MY=-1e4; });
   var last=performance.now();
   function loop(){
     if(!vis) return;
@@ -748,6 +792,12 @@ footer .copy{font-family:var(--grot);font-size:10px;color:var(--ink-faint);lette
       var p=ps[i];
       p.y-=p.vy*dt;
       p.x+=p.vx*dt+Math.sin(now/1400+p.ph)*0.12;
+      /* カーソルから逃げる（空気を払うような反応） */
+      var rx=p.x-MX, ry=p.y-MY, rd=Math.hypot(rx,ry);
+      if(rd<130 && rd>0.1){
+        var f=(1-rd/130)*140*dt;
+        p.x+=rx/rd*f; p.y+=ry/rd*f;
+      }
       if(p.y<-8) seed(i,false);
       var tw=0.7+0.3*Math.sin(now/900+p.ph);
       ctx.globalAlpha=p.a*tw;
